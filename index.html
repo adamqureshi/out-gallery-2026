@@ -4,14 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Shop Used Teslas • Only Used Tesla</title>
-  <meta name="description" content="Browse Tesla-only listings. Filter, save, and check availability in a couple taps." />
+  <meta name="description" content="Browse Tesla-only listings. Filter, save, and contact sellers with minimal friction." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <a class="skip-link" href="#main">Skip to listings</a>
+  <a class="skip-link" href="#listView">Skip to listings</a>
 
-  <header class="topbar" role="banner">
+  <!-- Top bar stays simple. On VDP we show a different top bar. -->
+  <header class="topbar" role="banner" id="listTopbar">
     <div class="topbar-inner">
       <a class="brand" href="#" aria-label="Only Used Tesla home">
         <span class="brand-mark">OUT</span>
@@ -34,40 +35,153 @@
   </header>
 
   <main id="main" class="main" role="main">
-    <section class="search-row" aria-label="Search listings">
-      <label class="search">
-        <span class="sr-only">Search</span>
-        <input id="searchInput" inputmode="search" autocomplete="off" placeholder="Search model, trim, city, or VIN…" />
-      </label>
+    <!-- LIST VIEW -->
+    <section id="listView" class="view view-active" aria-label="Tesla inventory list">
+      <section class="search-row" aria-label="Search listings">
+        <label class="search">
+          <span class="sr-only">Search</span>
+          <input id="searchInput" inputmode="search" autocomplete="off" placeholder="Search model, trim, city, or VIN…" />
+        </label>
 
-      <button class="sort-btn" id="sortBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
-        Sort
-      </button>
-    </section>
+        <button class="sort-btn" id="sortBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+          Sort
+        </button>
+      </section>
 
-    <section class="meta-row" aria-label="Results">
-      <div class="meta-left">
-        <div class="meta-count" id="resultsCount">0 Teslas</div>
-        <div class="meta-sub" id="resultsSub">Tap a listing to see details and message the seller.</div>
+      <section class="meta-row" aria-label="Results">
+        <div class="meta-left">
+          <div class="meta-count" id="resultsCount">0 Teslas</div>
+          <div class="meta-sub" id="resultsSub">Tap a listing to view photos and contact the seller.</div>
+        </div>
+
+        <button class="link-btn" id="toggleSavedOnly" type="button">Show saved</button>
+      </section>
+
+      <section class="card-list" id="list" aria-label="Tesla listings"></section>
+
+      <div class="empty" id="emptyState" hidden>
+        <div class="empty-title">No matches.</div>
+        <div class="empty-sub">Try clearing filters or searching a different model.</div>
+        <button class="btn-secondary" id="clearAllBtn" type="button">Clear filters</button>
       </div>
 
-      <button class="link-btn" id="toggleSavedOnly" type="button">Show saved</button>
+      <footer class="footer" role="contentinfo">
+        <div class="footer-inner">
+          <div class="footer-title">Footer placeholder</div>
+          <div class="footer-sub">Terms • Privacy • Contact • © <span id="yearNow"></span> Only Used Tesla</div>
+        </div>
+      </footer>
     </section>
 
-    <section class="card-list" id="list" aria-label="Tesla listings"></section>
+    <!-- VDP / PROFILE VIEW -->
+    <section id="vdpView" class="view" aria-label="Vehicle details" aria-hidden="true">
+      <header class="vdp-topbar" role="banner">
+        <button class="icon-btn" id="vdpBack" type="button" aria-label="Back to results">
+          <span class="icon" aria-hidden="true">←</span>
+          <span class="icon-btn-label">Back</span>
+        </button>
 
-    <div class="empty" id="emptyState" hidden>
-      <div class="empty-title">No matches.</div>
-      <div class="empty-sub">Try clearing filters or searching a different model.</div>
-      <button class="btn-secondary" id="clearAllBtn" type="button">Clear filters</button>
-    </div>
+        <div class="vdp-topbar-actions" role="group" aria-label="Listing actions">
+          <button class="icon-btn" id="vdpSave" type="button" aria-label="Save this Tesla">
+            <span class="icon" aria-hidden="true" id="vdpSaveIcon">♡</span>
+            <span class="icon-btn-label">Save</span>
+          </button>
 
-    <footer class="footer" role="contentinfo">
-      <div class="footer-inner">
-        <div class="footer-title">Footer placeholder</div>
-        <div class="footer-sub">Terms • Privacy • Contact • © <span id="yearNow"></span> Only Used Tesla</div>
+          <button class="icon-btn" id="vdpShare" type="button" aria-label="Share this listing">
+            <span class="icon" aria-hidden="true">⤴︎</span>
+            <span class="icon-btn-label">Share</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="vdp-media" aria-label="Photos and video">
+        <div class="tabs" role="tablist" aria-label="Media tabs">
+          <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="tabImages" id="tabImagesBtn">Images</button>
+          <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="tabVideo" id="tabVideoBtn">Video</button>
+        </div>
+
+        <!-- Images tab -->
+        <div class="tab-panel active" id="tabImages" role="tabpanel" aria-labelledby="tabImagesBtn">
+          <div class="carousel" aria-label="Image gallery">
+            <div class="carousel-track" id="carouselTrack" tabindex="0" aria-label="Swipe to browse photos"></div>
+
+            <button class="carousel-nav prev" id="carouselPrev" type="button" aria-label="Previous photo">‹</button>
+            <button class="carousel-nav next" id="carouselNext" type="button" aria-label="Next photo">›</button>
+
+            <div class="carousel-overlay">
+              <div class="badges" id="vdpBadges"></div>
+              <div class="carousel-count" id="carouselCount">1 / 1</div>
+            </div>
+          </div>
+
+          <div class="thumbs" id="thumbs" aria-label="Select a photo"></div>
+        </div>
+
+        <!-- Video tab -->
+        <div class="tab-panel" id="tabVideo" role="tabpanel" aria-labelledby="tabVideoBtn" hidden>
+          <div class="video-placeholder">
+            <div class="video-thumb" aria-hidden="true">
+              <div class="play">▶</div>
+            </div>
+            <div class="video-copy">
+              <div class="video-title">Video coming soon</div>
+              <div class="video-sub">Sellers will be able to upload walkaround videos. For now, browse photos.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vdp-body" aria-label="Vehicle details content">
+        <div class="vdp-title" id="vdpTitle">—</div>
+
+        <div class="vdp-price-row">
+          <div class="vdp-price" id="vdpPrice">$—</div>
+          <div class="vdp-meta" id="vdpMeta">—</div>
+        </div>
+
+        <div class="vdp-facts" id="vdpFacts" aria-label="Key facts"></div>
+
+        <div class="vdp-section">
+          <div class="vdp-section-title">Autopilot</div>
+          <div class="vdp-section-body" id="vdpAutopilot">—</div>
+          <div class="vdp-section-sub" id="vdpAutopilotSub">—</div>
+        </div>
+
+        <div class="vdp-section">
+          <div class="vdp-section-title">Vehicle history</div>
+          <div class="vdp-section-body">
+            <a class="link" id="vdpHistoryLink" href="#" target="_blank" rel="noopener">View vehicle history report</a>
+            <div class="muted" id="vdpHistoryNone" hidden>No vehicle history report yet.</div>
+          </div>
+        </div>
+
+        <div class="vdp-section">
+          <div class="vdp-section-title">Seller</div>
+          <div class="seller-card" id="vdpSellerCard"></div>
+        </div>
+
+        <div class="vdp-section">
+          <div class="vdp-section-title">Description</div>
+          <div class="vdp-section-body">
+            <div class="muted" id="vdpDescription">No description yet. Ask the seller for details.</div>
+          </div>
+        </div>
+
+        <div class="vdp-note">
+          <div class="note-title">No login required</div>
+          <div class="note-sub">Tap “Check availability” — we’ll capture your email + mobile so the seller can respond fast.</div>
+        </div>
+
+        <div class="vdp-spacer" aria-hidden="true"></div>
+      </section>
+
+      <!-- Sticky contact actions -->
+      <div class="vdp-actions" role="group" aria-label="Contact seller actions">
+        <button class="btn-primary" id="availabilityBtn2" type="button">Check availability</button>
+        <button class="btn-secondary" id="chatBtn2" type="button">Chat</button>
+        <button class="btn-secondary" id="textBtn2" type="button">Text</button>
       </div>
-    </footer>
+    </section>
   </main>
 
   <!-- Sort Menu -->
@@ -198,84 +312,6 @@
       <button class="btn-primary" id="applyFilters" type="submit" form="filtersForm">Apply</button>
     </div>
   </aside>
-
-  <!-- Detail Sheet -->
-  <div class="backdrop" id="sheetBackdrop" hidden></div>
-  <section class="sheet" id="detailSheet" role="dialog" aria-label="Tesla details" aria-hidden="true">
-    <div class="sheet-handle" aria-hidden="true"></div>
-
-    <div class="sheet-top">
-      <div class="sheet-top-left">
-        <div class="sheet-title" id="sheetTitle">—</div>
-        <div class="sheet-sub" id="sheetSub">—</div>
-      </div>
-
-      <button class="icon-btn" id="closeSheet" type="button" aria-label="Close details">
-        <span class="icon" aria-hidden="true">✕</span>
-      </button>
-    </div>
-
-    <div class="carousel" aria-label="Photo gallery">
-      <button class="carousel-btn" id="prevImg" type="button" aria-label="Previous photo">‹</button>
-      <img class="carousel-img" id="carouselImg" alt="Tesla photo" loading="lazy" />
-      <button class="carousel-btn" id="nextImg" type="button" aria-label="Next photo">›</button>
-      <div class="carousel-meta">
-        <div class="badges" id="sheetBadges"></div>
-        <div class="carousel-count" id="carouselCount">1 / 1</div>
-      </div>
-    </div>
-
-    <div class="sheet-body">
-      <div class="price-line">
-        <div class="price" id="sheetPrice">$—</div>
-        <div class="miles" id="sheetMiles">— miles</div>
-      </div>
-
-      <dl class="specs">
-        <div class="spec">
-          <dt>VIN</dt>
-          <dd id="sheetVin">—</dd>
-        </div>
-        <div class="spec">
-          <dt>Location</dt>
-          <dd id="sheetLocation">—</dd>
-        </div>
-        <div class="spec">
-          <dt>Seller</dt>
-          <dd id="sheetSeller">—</dd>
-        </div>
-        <div class="spec">
-          <dt>Autopilot</dt>
-          <dd id="sheetAutopilot">—</dd>
-        </div>
-        <div class="spec">
-          <dt>Software / Hardware</dt>
-          <dd id="sheetSW">—</dd>
-        </div>
-      </dl>
-
-      <div class="links">
-        <a class="link" id="sheetHistoryLink" href="#" target="_blank" rel="noopener">View vehicle history report</a>
-        <div class="muted" id="sheetHistoryNone" hidden>No vehicle history report yet.</div>
-      </div>
-
-      <div class="note">
-        <div class="note-title">No login required</div>
-        <div class="note-sub">Check availability in one step — we’ll capture your email + mobile so the seller can respond fast.</div>
-      </div>
-
-      <div class="note subtle">
-        <div class="note-title">Heads up</div>
-        <div class="note-sub">Listings can sell quickly. “Check availability” sends a message + timestamp so you don’t waste time.</div>
-      </div>
-    </div>
-
-    <div class="sheet-actions" role="group" aria-label="Contact actions">
-      <button class="btn-primary" id="availabilityBtn" type="button">Check availability</button>
-      <button class="btn-secondary" id="chatBtn" type="button">Chat</button>
-      <button class="btn-secondary" id="textBtn" type="button">Text</button>
-    </div>
-  </section>
 
   <!-- Availability / Contact Modal -->
   <div class="modal-backdrop" id="modalBackdrop" hidden></div>

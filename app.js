@@ -1,13 +1,25 @@
-/* OUT Gallery (front-end placeholder)
+/* out-gallery (Shop / Inventory UI)
    - Mobile-first list view
-   - Filters + Saved (localStorage)
-   - Detail bottom sheet with 1-image carousel placeholder
-   - "Check availability" modal captures email + mobile (no login)
+   - Filters + Saved (localStorage, no login)
+   - VDP / listing profile view (full-screen) with swipe gallery + thumbnails
+   - Images + Video tabs (video placeholder)
+   - "Check availability / Chat / Text" opens a single no-login lead-capture modal
 */
 
 (function () {
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  // ---------- Demo media (placeholders) ----------
+  const IMG_DARK = "assets/tesla-placeholder.png";
+  const IMG_WHITE = "assets/tesla-model-Y.png";
+
+  function demoImages(count = 10) {
+    // Alternate between 2 placeholders so the gallery shows real behavior.
+    const arr = [];
+    for (let i = 0; i < count; i++) arr.push(i % 2 === 0 ? IMG_DARK : IMG_WHITE);
+    return arr;
+  }
 
   // ---------- Sample inventory (placeholders) ----------
   const INVENTORY = [
@@ -19,7 +31,7 @@
       trim: "Long Range",
       price: 38900,
       miles: 41250,
-      autopilot: { level: "FSD", label: "Full Self‑Driving (Supervised)" },
+      autopilot: { level: "fsd", label: "Full Self‑Driving (Supervised)" },
       apSoftware: "2025.4 (placeholder)",
       apHardware: "HW4 (placeholder)",
       sellerType: "private",
@@ -28,7 +40,8 @@
       historyReportUrl: "#",
       location: { city: "Austin", state: "TX" },
       vin: "5YJYGDEE9MF123456",
-      images: ["assets/tesla-placeholder.png"],
+      images: demoImages(10),
+      description: "Fleet‑verified private seller listing. Ask about service records and included accessories.",
       postedAt: "2026-02-20"
     },
     {
@@ -48,7 +61,8 @@
       historyReportUrl: "#",
       location: { city: "San Diego", state: "CA" },
       vin: "5YJ3E1EC7MF234567",
-      images: ["assets/tesla-placeholder.png"],
+      images: demoImages(10),
+      description: "Dealer inventory feed (placeholder). Features may be dealer-supplied unless Fleet Verified.",
       postedAt: "2026-02-22"
     },
     {
@@ -68,7 +82,8 @@
       historyReportUrl: "",
       location: { city: "Scottsdale", state: "AZ" },
       vin: "5YJSA1E2XLF345678",
-      images: ["assets/tesla-placeholder.png"],
+      images: demoImages(10),
+      description: "",
       postedAt: "2026-02-18"
     },
     {
@@ -88,7 +103,8 @@
       historyReportUrl: "#",
       location: { city: "Miami", state: "FL" },
       vin: "7SAXCBEF3PF456789",
-      images: ["assets/tesla-placeholder.png"],
+      images: demoImages(10),
+      description: "High-performance Plaid listing (placeholder). Tap to view photos and message the seller.",
       postedAt: "2026-02-23"
     },
     {
@@ -108,7 +124,8 @@
       historyReportUrl: "#",
       location: { city: "Nashville", state: "TN" },
       vin: "7SAXCDEG1RF567890",
-      images: ["assets/tesla-placeholder.png"],
+      images: demoImages(10),
+      description: "Connected seller (Fleet Verified). Ask for OUT‑CHECK if you want a shareable report link.",
       postedAt: "2026-02-21"
     }
   ];
@@ -134,7 +151,8 @@
     savedIds: new Set(loadSavedIds()),
     activeListing: null,
     carouselIndex: 0,
-    modalMode: "availability" // availability | chat | text
+    modalMode: "availability", // availability | chat | text
+    activeTab: "images" // images | video
   };
 
   function loadSavedIds() {
@@ -179,7 +197,25 @@
     toast._t = setTimeout(() => (el.hidden = true), 2200);
   }
 
-  // ---------- Rendering ----------
+  function setView(view) {
+    // view: "list" | "vdp"
+    document.body.dataset.view = view;
+    if (view === "vdp") {
+      $("#listView").classList.remove("view-active");
+      $("#vdpView").classList.add("view-active");
+      $("#vdpView").setAttribute("aria-hidden", "false");
+      $("#listView").setAttribute("aria-hidden", "true");
+      // Make page feel like a new "screen" on mobile
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } else {
+      $("#vdpView").classList.remove("view-active");
+      $("#listView").classList.add("view-active");
+      $("#vdpView").setAttribute("aria-hidden", "true");
+      $("#listView").setAttribute("aria-hidden", "false");
+    }
+  }
+
+  // ---------- Rendering (List) ----------
   function render() {
     $("#yearNow").textContent = new Date().getFullYear();
     updateSavedCount();
@@ -191,7 +227,7 @@
 
     $("#resultsCount").textContent = `${filtered.length} Tesla${filtered.length === 1 ? "" : "s"}`;
     $("#resultsSub").textContent = filtered.length
-      ? "Tap a listing to see details and message the seller."
+      ? "Tap a listing to view photos and contact the seller."
       : "No matches. Try clearing filters.";
 
     const empty = $("#emptyState");
@@ -242,31 +278,29 @@
         </div>
 
         <div class="card-actions" aria-label="Quick actions">
-          <button class="cta" type="button">Check availability</button>
+          <button class="cta" type="button">View</button>
           <button class="mini" type="button" aria-label="Chat"><span aria-hidden="true">💬</span></button>
         </div>
       </div>
     `;
 
-    // Card click -> open details
+    // Open VDP (profile view)
     card.addEventListener("click", (e) => {
       const t = e.target;
-
       if (t.closest(".card-save")) return;
       if (t.closest(".cta")) return;
       if (t.closest(".mini")) return;
-
-      openSheet(car.id);
+      openVDP(car.id);
     });
 
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        openSheet(car.id);
+        openVDP(car.id);
       }
     });
 
-    // Save
+    // Save (no login)
     const saveBtn = $(".card-save", card);
     saveBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -278,17 +312,24 @@
       toast(state.savedIds.has(car.id) ? "Saved" : "Removed");
     });
 
-    // Check availability (from card)
+    // View listing (from card primary CTA)
     $(".cta", card).addEventListener("click", (e) => {
       e.stopPropagation();
-      openSheet(car.id);
-      openContactModal("availability");
+      openVDP(car.id);
+
+      // Subtle nudge: highlight the "Check availability" button in the VDP (no auto-modal).
+      requestAnimationFrame(() => {
+        const btn = $("#availabilityBtn2");
+        if (!btn) return;
+        btn.classList.add("pulse");
+        setTimeout(() => btn.classList.remove("pulse"), 1400);
+      });
     });
 
     // Chat (from card)
     $(".mini", card).addEventListener("click", (e) => {
       e.stopPropagation();
-      openSheet(car.id);
+      openVDP(car.id);
       openContactModal("chat");
     });
 
@@ -339,7 +380,7 @@
 
     // Autopilot
     if (state.filters.autopilot === "basic") arr = arr.filter((c) => c.autopilot.level === "basic");
-    if (state.filters.autopilot === "fsd") arr = arr.filter((c) => c.autopilot.level === "FSD" || c.autopilot.level === "fsd");
+    if (state.filters.autopilot === "fsd") arr = arr.filter((c) => c.autopilot.level === "fsd" || c.autopilot.level === "FSD");
 
     // Fleet verified
     if (state.filters.fleetVerified) arr = arr.filter((c) => c.fleetVerified);
@@ -370,6 +411,287 @@
     if (state.savedIds.has(id)) state.savedIds.delete(id);
     else state.savedIds.add(id);
     persistSavedIds();
+  }
+
+  // ---------- VDP / Listing Profile View ----------
+  const carouselTrack = () => $("#carouselTrack");
+  const thumbsEl = () => $("#thumbs");
+
+  function makeBadge(text, dark) {
+    const span = document.createElement("span");
+    span.className = `badge ${dark ? "dark" : ""}`;
+    span.textContent = text;
+    return span;
+  }
+
+  function openVDP(id) {
+    const car = INVENTORY.find((c) => c.id === id);
+    if (!car) return;
+
+    state.activeListing = car;
+    state.carouselIndex = 0;
+    state.activeTab = "images";
+
+    // Update hash for share/deeplink
+    const nextHash = `vdp=${encodeURIComponent(id)}`;
+    if (location.hash.replace("#", "") !== nextHash) {
+      location.hash = nextHash;
+    }
+
+    renderVDP(car);
+    setView("vdp");
+  }
+
+  function closeVDP() {
+    state.activeListing = null;
+    setView("list");
+    // Clear hash if we're currently on a vdp hash
+    if (location.hash.startsWith("#vdp=")) {
+      history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+  }
+
+  function renderVDP(car) {
+    // Title + pricing
+    $("#vdpTitle").textContent = `${car.year} ${car.make} ${car.model} — ${car.trim}`;
+    $("#vdpPrice").textContent = money(car.price);
+    $("#vdpMeta").textContent = `${miles(car.miles)} • ${car.location.city}, ${car.location.state}`;
+
+    // Facts (quick scan)
+    const facts = $("#vdpFacts");
+    facts.innerHTML = "";
+    facts.appendChild(fact("VIN", car.vin));
+    facts.appendChild(fact("Seller", car.sellerType === "dealer" ? "Dealer Ad" : "Private Seller"));
+    facts.appendChild(fact("Posted", prettyDate(car.postedAt)));
+
+    // Autopilot section
+    $("#vdpAutopilot").textContent = car.autopilot.label;
+    const sw = car.apSoftware || "Unknown";
+    const hw = car.apHardware || "Unknown";
+    $("#vdpAutopilotSub").textContent = `Software: ${sw} • Hardware: ${hw}`;
+
+    // Badges (over media)
+    const badges = $("#vdpBadges");
+    badges.innerHTML = "";
+    badges.appendChild(makeBadge(car.sellerType === "dealer" ? "Dealer Ad" : "Private Seller", car.sellerType === "dealer"));
+    if (car.fleetVerified) badges.appendChild(makeBadge("Fleet Verified", false));
+    if (car.historyReportUrl) badges.appendChild(makeBadge("History report", false));
+
+    // History link
+    const link = $("#vdpHistoryLink");
+    const none = $("#vdpHistoryNone");
+    if (car.historyReportUrl) {
+      link.hidden = false;
+      none.hidden = true;
+      link.href = car.historyReportUrl;
+    } else {
+      link.hidden = true;
+      none.hidden = false;
+    }
+
+    // Seller card (profile-ish, minimal)
+    const seller = $("#vdpSellerCard");
+    const sellerTypeLabel = car.sellerType === "dealer" ? "Dealer" : "Private seller";
+    const sellerNote =
+      car.sellerType === "dealer"
+        ? "Inventory feed listing. Features may be dealer‑supplied unless Fleet Verified."
+        : car.fleetVerified
+          ? "Connected seller — key features verified via Tesla Fleet API."
+          : "Private seller listing. Ask for Fleet Verified / OUT‑CHECK if you want verified feature data.";
+    seller.innerHTML = `
+      <div class="seller-left">
+        <div class="avatar" aria-hidden="true">${sellerTypeLabel === "Dealer" ? "D" : "P"}</div>
+        <div>
+          <div class="seller-name">${sellerTypeLabel}</div>
+          <div class="seller-sub">${car.location.city}, ${car.location.state}</div>
+        </div>
+      </div>
+      <div class="seller-right">
+        <div class="seller-chip">${car.fleetVerified ? "Fleet Verified" : "Standard"}</div>
+      </div>
+      <div class="seller-note">${escapeHtml(sellerNote)}</div>
+    `;
+
+    // Description
+    const desc = car.description ? car.description : "No description yet. Ask the seller for details.";
+    $("#vdpDescription").textContent = desc;
+
+    // Save button state on VDP
+    syncVDPSaveButton();
+
+    // Tabs default
+    setMediaTab("images");
+
+    // Gallery
+    buildGallery(car);
+  }
+
+  function fact(label, value) {
+    const div = document.createElement("div");
+    div.className = "fact";
+    div.innerHTML = `<div class="fact-k">${escapeHtml(label)}</div><div class="fact-v">${escapeHtml(value)}</div>`;
+    return div;
+  }
+
+  function prettyDate(iso) {
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return "—";
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function buildGallery(car) {
+    const imgs = Array.isArray(car.images) && car.images.length ? car.images : [IMG_DARK];
+
+    // Build slides
+    const track = carouselTrack();
+    track.innerHTML = "";
+    imgs.forEach((src, i) => {
+      const slide = document.createElement("div");
+      slide.className = "slide";
+      slide.innerHTML = `<img src="${src}" alt="${car.year} ${car.make} ${car.model} photo ${i + 1}" loading="lazy" />`;
+      track.appendChild(slide);
+    });
+
+    // Build thumbnails
+    const thumbs = thumbsEl();
+    thumbs.innerHTML = "";
+    imgs.forEach((src, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "thumb";
+      b.setAttribute("aria-label", `View photo ${i + 1}`);
+      b.innerHTML = `<img src="${src}" alt="" loading="lazy" />`;
+      b.addEventListener("click", () => scrollToIndex(i));
+      thumbs.appendChild(b);
+    });
+
+    // Reset index + scroll
+    state.carouselIndex = 0;
+    requestAnimationFrame(() => {
+      track.scrollTo({ left: 0, behavior: "auto" });
+      syncCarouselUI();
+    });
+
+    // Attach once: scroll listener
+    track.onscroll = () => {
+      const w = track.clientWidth || 1;
+      const idx = Math.round(track.scrollLeft / w);
+      if (idx !== state.carouselIndex) {
+        state.carouselIndex = clamp(idx, 0, imgs.length - 1);
+        syncCarouselUI();
+      }
+    };
+
+    // Prev/next
+    $("#carouselPrev").onclick = () => {
+      scrollToIndex((state.carouselIndex - 1 + imgs.length) % imgs.length);
+    };
+    $("#carouselNext").onclick = () => {
+      scrollToIndex((state.carouselIndex + 1) % imgs.length);
+    };
+
+    function scrollToIndex(i) {
+      const idx = clamp(i, 0, imgs.length - 1);
+      const w = track.clientWidth || 1;
+      state.carouselIndex = idx;
+      track.scrollTo({ left: idx * w, behavior: "smooth" });
+      syncCarouselUI();
+    }
+
+    function syncCarouselUI() {
+      $("#carouselCount").textContent = `${state.carouselIndex + 1} / ${imgs.length}`;
+      $$(".thumb", thumbs).forEach((el, i) => el.classList.toggle("active", i === state.carouselIndex));
+
+      // Keep active thumb in view on mobile
+      const active = $(".thumb.active", thumbs);
+      if (active) {
+        active.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+      }
+    }
+  }
+
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
+  }
+
+  // VDP top actions
+  $("#vdpBack").addEventListener("click", () => {
+    // Prefer browser back if hash exists
+    if (location.hash.startsWith("#vdp=")) history.back();
+    else closeVDP();
+  });
+
+  $("#vdpSave").addEventListener("click", () => {
+    const car = state.activeListing;
+    if (!car) return;
+    toggleSave(car.id);
+    syncVDPSaveButton();
+    updateSavedCount();
+    toast(state.savedIds.has(car.id) ? "Saved" : "Removed");
+    render(); // keep list view cards in sync
+  });
+
+  function syncVDPSaveButton() {
+    const car = state.activeListing;
+    const btn = $("#vdpSave");
+    const icon = $("#vdpSaveIcon");
+    if (!car) return;
+    const saved = state.savedIds.has(car.id);
+    icon.textContent = saved ? "♥" : "♡";
+    btn.setAttribute("aria-label", saved ? "Unsave this Tesla" : "Save this Tesla");
+  }
+
+  $("#vdpShare").addEventListener("click", async () => {
+    const car = state.activeListing;
+    if (!car) return;
+    const url = window.location.href;
+    const title = `${car.year} ${car.make} ${car.model} — ${car.trim}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: title, url });
+        toast("Shared");
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast("Link copied");
+      }
+    } catch {
+      // ignore
+      toast("Copied (placeholder)");
+    }
+  });
+
+  // Media tabs
+  const tabImagesBtn = $("#tabImagesBtn");
+  const tabVideoBtn = $("#tabVideoBtn");
+
+  tabImagesBtn.addEventListener("click", () => setMediaTab("images"));
+  tabVideoBtn.addEventListener("click", () => setMediaTab("video"));
+
+  function setMediaTab(tab) {
+    state.activeTab = tab;
+
+    const isImages = tab === "images";
+    tabImagesBtn.classList.toggle("active", isImages);
+    tabVideoBtn.classList.toggle("active", !isImages);
+    tabImagesBtn.setAttribute("aria-selected", isImages ? "true" : "false");
+    tabVideoBtn.setAttribute("aria-selected", !isImages ? "true" : "false");
+
+    $("#tabImages").classList.toggle("active", isImages);
+    $("#tabVideo").classList.toggle("active", !isImages);
+    $("#tabVideo").hidden = isImages;
   }
 
   // ---------- Sort Menu ----------
@@ -404,15 +726,6 @@
     });
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeSortMenu();
-      closeFilters();
-      closeSheet();
-      closeModal();
-    }
-  });
-
   // ---------- Filters Drawer ----------
   const filtersBtn = $("#filtersBtn");
   const filtersDrawer = $("#filtersDrawer");
@@ -424,7 +737,6 @@
     filtersBackdrop.hidden = false;
     filtersDrawer.classList.add("open");
     filtersDrawer.setAttribute("aria-hidden", "false");
-    // Focus first interactive
     setTimeout(() => {
       const first = filtersDrawer.querySelector("input, select, button, textarea");
       if (first) first.focus();
@@ -563,104 +875,7 @@
     toast("Showing saved");
   });
 
-  // ---------- Detail Sheet ----------
-  const sheet = $("#detailSheet");
-  const sheetBackdrop = $("#sheetBackdrop");
-  const closeSheetBtn = $("#closeSheet");
-
-  function openSheet(id) {
-    const car = INVENTORY.find((c) => c.id === id);
-    if (!car) return;
-
-    state.activeListing = car;
-    state.carouselIndex = 0;
-
-    $("#sheetTitle").textContent = `${car.year} ${car.make} ${car.model} — ${car.trim}`;
-    $("#sheetSub").textContent = `${car.location.city}, ${car.location.state} • VIN ${car.vin}`;
-    $("#sheetPrice").textContent = money(car.price);
-    $("#sheetMiles").textContent = miles(car.miles);
-    $("#sheetVin").textContent = car.vin;
-    $("#sheetLocation").textContent = `${car.location.city}, ${car.location.state}`;
-    $("#sheetSeller").textContent = car.sellerType === "dealer" ? "Dealer Ad" : "Private Seller";
-    $("#sheetAutopilot").textContent = car.autopilot.label;
-
-    const sw = car.apSoftware || "Unknown";
-    const hw = car.apHardware || "Unknown";
-    $("#sheetSW").textContent = `${sw} • ${hw}`;
-
-    // badges
-    const badges = $("#sheetBadges");
-    badges.innerHTML = "";
-    badges.appendChild(makeBadge(car.sellerType === "dealer" ? "Dealer Ad" : "Private Seller", car.sellerType === "dealer"));
-
-    if (car.fleetVerified) badges.appendChild(makeBadge("Fleet Verified", false));
-    if (car.historyReportUrl) badges.appendChild(makeBadge("History report", false));
-
-    // history link
-    const link = $("#sheetHistoryLink");
-    const none = $("#sheetHistoryNone");
-    if (car.historyReportUrl) {
-      link.hidden = false;
-      none.hidden = true;
-      link.href = car.historyReportUrl;
-    } else {
-      link.hidden = true;
-      none.hidden = false;
-    }
-
-    // carousel
-    updateCarousel();
-
-    sheetBackdrop.hidden = false;
-    sheet.classList.add("open");
-    sheet.setAttribute("aria-hidden", "false");
-  }
-
-  function makeBadge(text, dark) {
-    const span = document.createElement("span");
-    span.className = `badge ${dark ? "dark" : ""}`;
-    span.textContent = text;
-    return span;
-  }
-
-  function closeSheet() {
-    sheetBackdrop.hidden = true;
-    sheet.classList.remove("open");
-    sheet.setAttribute("aria-hidden", "true");
-  }
-
-  closeSheetBtn.addEventListener("click", closeSheet);
-  sheetBackdrop.addEventListener("click", closeSheet);
-
-  function updateCarousel() {
-    const car = state.activeListing;
-    if (!car) return;
-    const total = car.images.length || 1;
-    const idx = Math.max(0, Math.min(state.carouselIndex, total - 1));
-    state.carouselIndex = idx;
-
-    $("#carouselImg").src = car.images[idx];
-    $("#carouselImg").alt = `${car.year} ${car.make} ${car.model} photo ${idx + 1}`;
-    $("#carouselCount").textContent = `${idx + 1} / ${total}`;
-  }
-
-  $("#prevImg").addEventListener("click", () => {
-    const car = state.activeListing;
-    if (!car) return;
-    const total = car.images.length || 1;
-    state.carouselIndex = (state.carouselIndex - 1 + total) % total;
-    updateCarousel();
-  });
-
-  $("#nextImg").addEventListener("click", () => {
-    const car = state.activeListing;
-    if (!car) return;
-    const total = car.images.length || 1;
-    state.carouselIndex = (state.carouselIndex + 1) % total;
-    updateCarousel();
-  });
-
-  // ---------- Contact Modal ----------
+  // ---------- Contact Modal (no login) ----------
   const modalBackdrop = $("#modalBackdrop");
   const modal = $("#availabilityModal");
   const closeModalBtn = $("#closeModal");
@@ -706,15 +921,15 @@
     modal.setAttribute("aria-hidden", "true");
   }
 
-  $("#availabilityBtn").addEventListener("click", () => openContactModal("availability"));
-  $("#chatBtn").addEventListener("click", () => openContactModal("chat"));
-  $("#textBtn").addEventListener("click", () => openContactModal("text"));
+  // VDP action buttons
+  $("#availabilityBtn2").addEventListener("click", () => openContactModal("availability"));
+  $("#chatBtn2").addEventListener("click", () => openContactModal("chat"));
+  $("#textBtn2").addEventListener("click", () => openContactModal("text"));
 
   closeModalBtn.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", closeModal);
 
   function validateEmail(v) {
-    // simple email validation
     const s = String(v || "").trim();
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
   }
@@ -788,33 +1003,54 @@
 
   yoyoForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const text = (yoyoInput.value || "").trim();
-    if (!text) return;
+    const txt = yoyoInput.value.trim();
+    if (!txt) return;
 
-    const user = document.createElement("div");
-    user.className = "chat-bubble user";
-    user.textContent = text;
-    yoyoBody.appendChild(user);
+    const you = document.createElement("div");
+    you.className = "chat-bubble user";
+    you.textContent = txt;
+    yoyoBody.appendChild(you);
 
-    // Very simple placeholder response (swap with real agent later)
     const bot = document.createElement("div");
     bot.className = "chat-bubble bot";
-    bot.textContent = suggestReply(text);
+    bot.textContent = "Yo‑Yo (placeholder): I can help filter listings and connect you to sellers fast.";
     yoyoBody.appendChild(bot);
 
     yoyoInput.value = "";
     yoyoBody.scrollTop = yoyoBody.scrollHeight;
   });
 
-  function suggestReply(text) {
-    const t = norm(text);
-    if (t.includes("model y")) return "Want Model Y only? Open Filters → Model → Model Y. You can also sort by miles or price.";
-    if (t.includes("fsd")) return "Filter → Autopilot → FSD. If you want verified details, turn on Fleet Verified.";
-    if (t.includes("saved")) return "Tap Saved at the top to view your saved Teslas. Saving works without an account (stored on this device).";
-    if (t.includes("available")) return "Tap any listing → Check availability. No login — just email + mobile so the seller can reply fast.";
-    return "Got it. You can filter by model, year, price, miles, seller type (dealer vs private), and more. What’s your budget + model?";
+  // ---------- Routing (hash) ----------
+  function handleHash() {
+    const h = location.hash || "";
+    if (h.startsWith("#vdp=")) {
+      const id = decodeURIComponent(h.replace("#vdp=", ""));
+      const car = INVENTORY.find((c) => c.id === id);
+      if (car) {
+        state.activeListing = car;
+        renderVDP(car);
+        setView("vdp");
+        return;
+      }
+    }
+    // default
+    setView("list");
   }
 
-  // ---------- Wire up ----------
+  window.addEventListener("hashchange", handleHash);
+
+  // ---------- Global keys ----------
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeSortMenu();
+      closeFilters();
+      closeModal();
+      if (document.body.dataset.view === "vdp") closeVDP();
+    }
+  });
+
+  // ---------- Init ----------
+  document.body.dataset.view = "list";
   render();
+  handleHash();
 })();
