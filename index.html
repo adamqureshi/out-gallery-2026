@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shop Used Teslas • Only Used Tesla</title>
+  <meta name="description" content="Browse Tesla-only listings. Filter, save, and check availability in a couple taps." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to listings</a>
+
+  <header class="topbar" role="banner">
+    <div class="topbar-inner">
+      <a class="brand" href="#" aria-label="Only Used Tesla home">
+        <span class="brand-mark">OUT</span>
+        <span class="brand-name">Only Used Tesla</span>
+      </a>
+
+      <div class="topbar-actions" role="group" aria-label="Top actions">
+        <button class="icon-btn" id="savedBtn" type="button" aria-label="View saved Teslas">
+          <span class="icon" aria-hidden="true">♥</span>
+          <span class="icon-btn-label">Saved</span>
+          <span class="pill" id="savedCountPill">0</span>
+        </button>
+
+        <button class="icon-btn" id="filtersBtn" type="button" aria-label="Open filters">
+          <span class="icon" aria-hidden="true">≡</span>
+          <span class="icon-btn-label">Filters</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="main" role="main">
+    <section class="search-row" aria-label="Search listings">
+      <label class="search">
+        <span class="sr-only">Search</span>
+        <input id="searchInput" inputmode="search" autocomplete="off" placeholder="Search model, trim, city, or VIN…" />
+      </label>
+
+      <button class="sort-btn" id="sortBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+        Sort
+      </button>
+    </section>
+
+    <section class="meta-row" aria-label="Results">
+      <div class="meta-left">
+        <div class="meta-count" id="resultsCount">0 Teslas</div>
+        <div class="meta-sub" id="resultsSub">Tap a listing to see details and message the seller.</div>
+      </div>
+
+      <button class="link-btn" id="toggleSavedOnly" type="button">Show saved</button>
+    </section>
+
+    <section class="card-list" id="list" aria-label="Tesla listings"></section>
+
+    <div class="empty" id="emptyState" hidden>
+      <div class="empty-title">No matches.</div>
+      <div class="empty-sub">Try clearing filters or searching a different model.</div>
+      <button class="btn-secondary" id="clearAllBtn" type="button">Clear filters</button>
+    </div>
+
+    <footer class="footer" role="contentinfo">
+      <div class="footer-inner">
+        <div class="footer-title">Footer placeholder</div>
+        <div class="footer-sub">Terms • Privacy • Contact • © <span id="yearNow"></span> Only Used Tesla</div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Sort Menu -->
+  <div class="menu-backdrop" id="menuBackdrop" hidden></div>
+  <div class="menu" id="sortMenu" role="listbox" aria-label="Sort listings" tabindex="-1" hidden>
+    <button class="menu-item" role="option" data-sort="newest" type="button">Newest</button>
+    <button class="menu-item" role="option" data-sort="price-asc" type="button">Price: low → high</button>
+    <button class="menu-item" role="option" data-sort="price-desc" type="button">Price: high → low</button>
+    <button class="menu-item" role="option" data-sort="miles-asc" type="button">Miles: low → high</button>
+    <button class="menu-item" role="option" data-sort="miles-desc" type="button">Miles: high → low</button>
+  </div>
+
+  <!-- Filters Drawer -->
+  <div class="backdrop" id="filtersBackdrop" hidden></div>
+  <aside class="drawer" id="filtersDrawer" aria-hidden="true" aria-label="Filters">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title">Filters</div>
+        <div class="drawer-sub">Fast filters for mobile. Apply to update results.</div>
+      </div>
+      <button class="icon-btn" id="closeFilters" type="button" aria-label="Close filters">
+        <span class="icon" aria-hidden="true">✕</span>
+      </button>
+    </div>
+
+    <form id="filtersForm" class="drawer-body">
+      <fieldset class="field">
+        <legend>Seller type</legend>
+        <div class="segmented">
+          <label class="seg">
+            <input type="radio" name="sellerType" value="any" checked />
+            <span>Any</span>
+          </label>
+          <label class="seg">
+            <input type="radio" name="sellerType" value="private" />
+            <span>Private</span>
+          </label>
+          <label class="seg">
+            <input type="radio" name="sellerType" value="dealer" />
+            <span>Dealer</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Model</legend>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="model" value="Model S" /> Model S</label>
+          <label class="check"><input type="checkbox" name="model" value="Model 3" /> Model 3</label>
+          <label class="check"><input type="checkbox" name="model" value="Model X" /> Model X</label>
+          <label class="check"><input type="checkbox" name="model" value="Model Y" /> Model Y</label>
+          <label class="check"><input type="checkbox" name="model" value="Cybertruck" /> Cybertruck</label>
+        </div>
+      </fieldset>
+
+      <div class="field grid-2">
+        <label>
+          <span class="label">Year (min)</span>
+          <select name="yearMin" id="yearMin">
+            <option value="">Any</option>
+          </select>
+        </label>
+        <label>
+          <span class="label">Year (max)</span>
+          <select name="yearMax" id="yearMax">
+            <option value="">Any</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field grid-2">
+        <label>
+          <span class="label">Max price</span>
+          <input name="priceMax" type="number" inputmode="numeric" placeholder="e.g. 45000" />
+        </label>
+        <label>
+          <span class="label">Max miles</span>
+          <input name="milesMax" type="number" inputmode="numeric" placeholder="e.g. 60000" />
+        </label>
+      </div>
+
+      <fieldset class="field">
+        <legend>Autopilot</legend>
+        <div class="segmented">
+          <label class="seg">
+            <input type="radio" name="autopilot" value="any" checked />
+            <span>Any</span>
+          </label>
+          <label class="seg">
+            <input type="radio" name="autopilot" value="basic" />
+            <span>Basic</span>
+          </label>
+          <label class="seg">
+            <input type="radio" name="autopilot" value="fsd" />
+            <span>FSD</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <label class="toggle">
+        <input type="checkbox" name="fleetVerified" />
+        <span class="toggle-ui" aria-hidden="true"></span>
+        <span class="toggle-text">
+          <span class="toggle-title">Fleet Verified</span>
+          <span class="toggle-sub">Data confirmed from a connected Tesla (private sellers).</span>
+        </span>
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" name="hasHistory" />
+        <span class="toggle-ui" aria-hidden="true"></span>
+        <span class="toggle-text">
+          <span class="toggle-title">Has history report</span>
+          <span class="toggle-sub">Shows listings with a report link available.</span>
+        </span>
+      </label>
+
+      <div class="field">
+        <label>
+          <span class="label">Location (City or State)</span>
+          <input name="location" type="text" placeholder="e.g. Austin or TX" />
+        </label>
+      </div>
+    </form>
+
+    <div class="drawer-footer">
+      <button class="btn-secondary" id="resetFilters" type="button">Reset</button>
+      <button class="btn-primary" id="applyFilters" type="submit" form="filtersForm">Apply</button>
+    </div>
+  </aside>
+
+  <!-- Detail Sheet -->
+  <div class="backdrop" id="sheetBackdrop" hidden></div>
+  <section class="sheet" id="detailSheet" role="dialog" aria-label="Tesla details" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"></div>
+
+    <div class="sheet-top">
+      <div class="sheet-top-left">
+        <div class="sheet-title" id="sheetTitle">—</div>
+        <div class="sheet-sub" id="sheetSub">—</div>
+      </div>
+
+      <button class="icon-btn" id="closeSheet" type="button" aria-label="Close details">
+        <span class="icon" aria-hidden="true">✕</span>
+      </button>
+    </div>
+
+    <div class="carousel" aria-label="Photo gallery">
+      <button class="carousel-btn" id="prevImg" type="button" aria-label="Previous photo">‹</button>
+      <img class="carousel-img" id="carouselImg" alt="Tesla photo" loading="lazy" />
+      <button class="carousel-btn" id="nextImg" type="button" aria-label="Next photo">›</button>
+      <div class="carousel-meta">
+        <div class="badges" id="sheetBadges"></div>
+        <div class="carousel-count" id="carouselCount">1 / 1</div>
+      </div>
+    </div>
+
+    <div class="sheet-body">
+      <div class="price-line">
+        <div class="price" id="sheetPrice">$—</div>
+        <div class="miles" id="sheetMiles">— miles</div>
+      </div>
+
+      <dl class="specs">
+        <div class="spec">
+          <dt>VIN</dt>
+          <dd id="sheetVin">—</dd>
+        </div>
+        <div class="spec">
+          <dt>Location</dt>
+          <dd id="sheetLocation">—</dd>
+        </div>
+        <div class="spec">
+          <dt>Seller</dt>
+          <dd id="sheetSeller">—</dd>
+        </div>
+        <div class="spec">
+          <dt>Autopilot</dt>
+          <dd id="sheetAutopilot">—</dd>
+        </div>
+        <div class="spec">
+          <dt>Software / Hardware</dt>
+          <dd id="sheetSW">—</dd>
+        </div>
+      </dl>
+
+      <div class="links">
+        <a class="link" id="sheetHistoryLink" href="#" target="_blank" rel="noopener">View vehicle history report</a>
+        <div class="muted" id="sheetHistoryNone" hidden>No vehicle history report yet.</div>
+      </div>
+
+      <div class="note">
+        <div class="note-title">No login required</div>
+        <div class="note-sub">Check availability in one step — we’ll capture your email + mobile so the seller can respond fast.</div>
+      </div>
+
+      <div class="note subtle">
+        <div class="note-title">Heads up</div>
+        <div class="note-sub">Listings can sell quickly. “Check availability” sends a message + timestamp so you don’t waste time.</div>
+      </div>
+    </div>
+
+    <div class="sheet-actions" role="group" aria-label="Contact actions">
+      <button class="btn-primary" id="availabilityBtn" type="button">Check availability</button>
+      <button class="btn-secondary" id="chatBtn" type="button">Chat</button>
+      <button class="btn-secondary" id="textBtn" type="button">Text</button>
+    </div>
+  </section>
+
+  <!-- Availability / Contact Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" hidden></div>
+  <section class="modal" id="availabilityModal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Check availability">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Check availability</div>
+        <div class="modal-sub" id="modalSub">We’ll send your message to the seller.</div>
+      </div>
+      <button class="icon-btn" id="closeModal" type="button" aria-label="Close form">
+        <span class="icon" aria-hidden="true">✕</span>
+      </button>
+    </div>
+
+    <form class="modal-body" id="availabilityForm" novalidate>
+      <div class="form-grid">
+        <label class="field">
+          <span class="label">Email</span>
+          <input id="leadEmail" name="email" type="email" placeholder="you@email.com" required />
+          <span class="error" id="emailError" hidden>Please enter a valid email.</span>
+        </label>
+
+        <label class="field">
+          <span class="label">Mobile #</span>
+          <input id="leadPhone" name="phone" type="tel" inputmode="tel" placeholder="(555) 555‑5555" required />
+          <span class="error" id="phoneError" hidden>Please enter a valid mobile number.</span>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="label">Message (optional)</span>
+        <textarea id="leadMessage" name="message" rows="3" placeholder="Hi — is this Tesla still available?"></textarea>
+      </label>
+
+      <label class="consent">
+        <input id="smsConsent" type="checkbox" checked />
+        <span>I want updates by text.</span>
+      </label>
+
+      <button class="btn-primary w-100" id="sendBtn" type="submit">Send to seller</button>
+
+      <div class="fineprint">
+        No account needed. We don’t show your info publicly. You can opt out any time.
+      </div>
+    </form>
+  </section>
+
+  <!-- Yo‑Yo Agent (placeholder UI) -->
+  <button class="yoyo" id="yoyoBtn" type="button" aria-label="Chat with Yo‑Yo">
+    <span class="yoyo-dot" aria-hidden="true"></span>
+    Yo‑Yo
+  </button>
+
+  <section class="yoyo-panel" id="yoyoPanel" aria-hidden="true" aria-label="Yo‑Yo assistant">
+    <div class="yoyo-head">
+      <div>
+        <div class="yoyo-title">Yo‑Yo</div>
+        <div class="yoyo-sub">Ask about trims, pricing, or how to contact sellers.</div>
+      </div>
+      <button class="icon-btn" id="closeYoyo" type="button" aria-label="Close Yo‑Yo">
+        <span class="icon" aria-hidden="true">✕</span>
+      </button>
+    </div>
+    <div class="yoyo-body" id="yoyoBody">
+      <div class="chat-bubble bot">Hey — I can help you filter and find the right Tesla. What are you shopping for?</div>
+    </div>
+    <form class="yoyo-input" id="yoyoForm">
+      <input id="yoyoInput" type="text" placeholder="Type a message…" autocomplete="off" />
+      <button class="btn-primary" type="submit">Send</button>
+    </form>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
